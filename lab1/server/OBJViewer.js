@@ -75,7 +75,15 @@ function main() {
   // Start reading the OBJ file
   readOBJFile('dragon_vrip_res3.obj', gl, model, 60, true);
 
-  var currentAngle = 0.0; // Current rotation angle [degree]
+  var currentAngle = [0.0, 0.0]; // Current rotation angle [degree]
+  initEventHandlers(canvas, currentAngle);
+
+  // Set texture
+  if (!initTextures(gl)) {
+    console.log('Failed to intialize the texture.');
+    return;
+  }
+
   var tick = function() {   // Start drawing
     // currentAngle = animate(currentAngle); // Update current rotation angle
     // REMEMBER TO UNCOMMENT THIS IDIOT
@@ -97,6 +105,81 @@ function initVertexBuffers(gl, program) {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   return o;
+}
+
+function initEventHandlers(canvas, currentAngle) {
+  var dragging = false;         // Dragging or not
+  var lastX = -1, lastY = -1;   // Last position of the mouse
+
+  canvas.onmousedown = function(ev) {   // Mouse is pressed
+    var x = ev.clientX, y = ev.clientY;
+    // Start dragging if a moue is in <canvas>
+    var rect = ev.target.getBoundingClientRect();
+    if (rect.left <= x && x < rect.right && rect.top <= y && y < rect.bottom) {
+      lastX = x; lastY = y;
+      dragging = true;
+    }
+  };
+
+  canvas.onmouseup = function(ev) { dragging = false;  }; // Mouse is released
+
+  canvas.onmousemove = function(ev) { // Mouse is moved
+    var x = ev.clientX, y = ev.clientY;
+    if (dragging) {
+      var factor = 100/canvas.height; // The rotation ratio
+      var dx = factor * (x - lastX);
+      var dy = factor * (y - lastY);
+      // Limit x-axis rotation angle to -90 to 90 degrees
+      currentAngle[0] = Math.max(Math.min(currentAngle[0] + dy, 90.0), -90.0);
+      currentAngle[1] = currentAngle[1] + dx;
+    }
+    lastX = x, lastY = y;
+  };
+}
+
+function initTextures(gl) {
+  // Create a texture object
+  var texture = gl.createTexture();
+  if (!texture) {
+    console.log('Failed to create the texture object');
+    return false;
+  }
+
+  // Get the storage location of u_Sampler
+  var u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_Sampler');
+    return false;
+  }
+
+  // Create the image object
+  var image = new Image();
+  if (!image) {
+    console.log('Failed to create the image object');
+    return false;
+  }
+  // Register the event handler to be called when image loading is completed
+  image.onload = function(){ loadTexture(gl, texture, u_Sampler, image); };
+  // Tell the browser to load an Image
+  image.src = 'texture.jpg';
+
+  return true;
+}
+
+function loadTexture(gl, texture, u_Sampler, image) {
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);  // Flip the image Y coordinate
+  // Activate texture unit0
+  gl.activeTexture(gl.TEXTURE0);
+  // Bind the texture object to the target
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  // Set texture parameters
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  // Set the image to texture
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+  // Pass the texure unit 0 to u_Sampler
+  gl.uniform1i(u_Sampler, 0);
 }
 
 // Create a buffer object, assign it to attribute variables, and enable the assignment
@@ -156,9 +239,9 @@ function draw(gl, program, angle, viewProjMatrix, model) {
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);  // Clear color and depth buffers
 
-  g_modelMatrix.setRotate(angle, 1.0, 0.0, 0.0); // 適当に回転
-  g_modelMatrix.rotate(angle, 0.0, 1.0, 0.0);
-  g_modelMatrix.rotate(angle, 0.0, 0.0, 1.0);
+  g_modelMatrix.setRotate(angle[0], 1.0, 0.0, 0.0); // 適当に回転
+  g_modelMatrix.rotate(-angle[1], 0.0, 1.0, 0.0);
+  g_modelMatrix.rotate(0.0, 0.0, 0.0, 1.0);
 
   // Calculate the normal transformation matrix and pass it to u_NormalMatrix
   g_normalMatrix.setInverseOf(g_modelMatrix);
@@ -325,7 +408,6 @@ OBJDoc.prototype.parseFace = function(sp, materialName, vertices, reverse) {
     var word = sp.getWord();
     if(word == null) break;
     var subWords = word.split('/');
-    console.log(subWords)
     if(subWords.length >= 1){
       var vi = parseInt(subWords[0]) - 1;
       face.vIndices.push(vi);
