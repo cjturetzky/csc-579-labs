@@ -69,7 +69,7 @@ function main() {
 
   // ビュー投影行列を計算
   var viewProjMatrix = new Matrix4();
-  viewProjMatrix.setPerspective(30.0, canvas.width/canvas.height, 1.0, 5000.0);
+  viewProjMatrix.setPerspective(2.0, canvas.width/canvas.height, 1.0, 5000.0);
   viewProjMatrix.lookAt(0.0, 500.0, 200.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
   // Start reading the OBJ file
