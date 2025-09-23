@@ -77,7 +77,8 @@ function main() {
 
   var currentAngle = 0.0; // Current rotation angle [degree]
   var tick = function() {   // Start drawing
-    currentAngle = animate(currentAngle); // Update current rotation angle
+    // currentAngle = animate(currentAngle); // Update current rotation angle
+    // REMEMBER TO UNCOMMENT THIS IDIOT
     draw(gl, gl.program, currentAngle, viewProjMatrix, model);
     requestAnimationFrame(tick, canvas);
   };
@@ -324,6 +325,7 @@ OBJDoc.prototype.parseFace = function(sp, materialName, vertices, reverse) {
     var word = sp.getWord();
     if(word == null) break;
     var subWords = word.split('/');
+    console.log(subWords)
     if(subWords.length >= 1){
       var vi = parseInt(subWords[0]) - 1;
       face.vIndices.push(vi);
