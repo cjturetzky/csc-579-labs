@@ -79,10 +79,10 @@ function main() {
   initEventHandlers(canvas, currentAngle);
 
   // Set texture
-  if (!initTextures(gl)) {
-    console.log('Failed to intialize the texture.');
-    return;
-  }
+  // if (!initTextures(gl)) {
+  //   console.log('Failed to intialize the texture.');
+  //   return;
+  // }
 
   var tick = function() {   // Start drawing
     // currentAngle = animate(currentAngle); // Update current rotation angle
