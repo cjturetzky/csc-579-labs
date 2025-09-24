@@ -6,7 +6,7 @@ var VSHADER_SOURCE =
   'attribute vec2 a_TexCoord;\n' +
   'uniform mat4 u_MvpMatrix;\n' +
   'uniform mat4 u_NormalMatrix;\n' +
-  'varying highp vec2 v_TexCoord\n' +
+  'varying vec2 v_TexCoord\n' +
   'void main() {\n' +
   '  vec3 lightDirection = vec3(-0.35, 0.35, 0.87);\n' +
   '  gl_Position = u_MvpMatrix * a_Position;\n' +
@@ -21,7 +21,7 @@ var FSHADER_SOURCE =
   'precision mediump float;\n' +
   '#endif\n' +
   'uniform sampler2D u_Sampler;\n' +
-  'varying highp vec2 v_TexCoord;\n' +
+  'varying vec2 v_TexCoord;\n' +
   'void main() {\n' +
   '  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
   '}\n';

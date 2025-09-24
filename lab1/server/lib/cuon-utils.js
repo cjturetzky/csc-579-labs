@@ -7,9 +7,10 @@
  * @return true, if the program object was created and successfully made current 
  */
 function initShaders(gl, vshader, fshader) {
+  console.log("Beginning the function")
   var program = createProgram(gl, vshader, fshader);
   if (!program) {
-    console.log('Failed to create program');
+    console.log('Failed to create program TEST');
     return false;
   }
 
@@ -27,12 +28,15 @@ function initShaders(gl, vshader, fshader) {
  * @return created program object, or null if the creation has failed
  */
 function createProgram(gl, vshader, fshader) {
+  console.log("Begin creating program")
   // Create shader object
   var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
   var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
   if (!vertexShader || !fragmentShader) {
     return null;
   }
+
+  console.log("Shaders created")
 
   // Create a program object
   var program = gl.createProgram();
@@ -44,6 +48,7 @@ function createProgram(gl, vshader, fshader) {
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
 
+  console.log("Shaders attatched")
   // Link the program object
   gl.linkProgram(program);
 
@@ -57,6 +62,7 @@ function createProgram(gl, vshader, fshader) {
     gl.deleteShader(vertexShader);
     return null;
   }
+  console.log("Shaders linked")
   return program;
 }
 
