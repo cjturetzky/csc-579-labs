@@ -2,17 +2,17 @@
 // Vertex shader program
 var VSHADER_SOURCE = 
   'attribute vec4 a_Position;\n' +
-  'attribute vec4 a_Color;\n' +
   'attribute vec4 a_Normal;\n' +
+  'attribute vec2 a_TexCoord;\n' +
   'uniform mat4 u_MvpMatrix;\n' +
   'uniform mat4 u_NormalMatrix;\n' +
-  'varying vec4 v_Color;\n' +
+  'varying highp vec2 v_TexCoord\n' +
   'void main() {\n' +
   '  vec3 lightDirection = vec3(-0.35, 0.35, 0.87);\n' +
   '  gl_Position = u_MvpMatrix * a_Position;\n' +
   '  vec3 normal = normalize(vec3(u_NormalMatrix * a_Normal));\n' +
   '  float nDotL = max(dot(normal, lightDirection), 0.0);\n' +
-  '  v_Color = vec4(a_Color.rgb * nDotL, a_Color.a);\n' +
+  '  v_TexCoord = a_TexCoord;\n' +
   '}\n';
 
 // Fragment shader program
@@ -20,9 +20,10 @@ var FSHADER_SOURCE =
   '#ifdef GL_ES\n' +
   'precision mediump float;\n' +
   '#endif\n' +
-  'varying vec4 v_Color;\n' +
+  'uniform sampler2D u_Sampler;\n' +
+  'varying highp vec2 v_TexCoord;\n' +
   'void main() {\n' +
-  '  gl_FragColor = v_Color;\n' +
+  '  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
   '}\n';
 
 function main() {
@@ -50,11 +51,12 @@ function main() {
   var program = gl.program;
   program.a_Position = gl.getAttribLocation(program, 'a_Position');
   program.a_Normal = gl.getAttribLocation(program, 'a_Normal');
-  program.a_Color = gl.getAttribLocation(program, 'a_Color');
+  program.a_TexCoord = gl.getAttribLocation(program, 'a_TexCoord');
   program.u_MvpMatrix = gl.getUniformLocation(program, 'u_MvpMatrix');
   program.u_NormalMatrix = gl.getUniformLocation(program, 'u_NormalMatrix');
+  program.u_Sampler = gl.getUniformLocation(program, 'u_Sampler')
 
-  if (program.a_Position < 0 ||  program.a_Normal < 0 || program.a_Color < 0 ||
+  if (program.a_Position < 0 ||  program.a_Normal < 0 || program.a_TexCoord < 0 ||
       !program.u_MvpMatrix || !program.u_NormalMatrix) {
     console.log('attribute, uniform変数の格納場所の取得に失敗'); 
     return;
@@ -98,9 +100,20 @@ function initVertexBuffers(gl, program) {
   var o = new Object(); // Utilize Object object to return multiple buffer objects
   o.vertexBuffer = createEmptyArrayBuffer(gl, program.a_Position, 3, gl.FLOAT); 
   o.normalBuffer = createEmptyArrayBuffer(gl, program.a_Normal, 3, gl.FLOAT);
-  o.colorBuffer = createEmptyArrayBuffer(gl, program.a_Color, 4, gl.FLOAT);
+  o.texBuffer = createEmptyArrayBuffer(gl, program.a_TexCoord, 4, gl.FLOAT);
   o.indexBuffer = gl.createBuffer();
-  if (!o.vertexBuffer || !o.normalBuffer || !o.colorBuffer || !o.indexBuffer) { return null; }
+  if (!o.vertexBuffer || !o.normalBuffer || !o.texBuffer || !o.indexBuffer) { return null; }
+  
+  var texCoords = new Float32Array([   // Texture coordinates
+      1.0, 1.0,   0.0, 1.0,   0.0, 0.0,   1.0, 0.0,    // v0-v1-v2-v3 front
+      0.0, 1.0,   0.0, 0.0,   1.0, 0.0,   1.0, 1.0,    // v0-v3-v4-v5 right
+      1.0, 0.0,   1.0, 1.0,   0.0, 1.0,   0.0, 0.0,    // v0-v5-v6-v1 up
+      1.0, 1.0,   0.0, 1.0,   0.0, 0.0,   1.0, 0.0,    // v1-v6-v7-v2 left
+      0.0, 0.0,   1.0, 0.0,   1.0, 1.0,   0.0, 1.0,    // v7-v4-v3-v2 down
+      0.0, 0.0,   1.0, 0.0,   1.0, 1.0,   0.0, 1.0     // v4-v7-v6-v5 back
+  ]);
+  if (!initArrayBuffer(gl, vertices, 3, gl.FLOAT, 'a_Position')) return -1; // Vertex coordinates
+  if (!initArrayBuffer(gl, texCoords, 2, gl.FLOAT, 'a_TexCoord')) return -1;// Texture coordinates
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -196,6 +209,29 @@ function createEmptyArrayBuffer(gl, a_attribute, num, type) {
   return buffer;
 }
 
+function initArrayBuffer(gl, data, num, type, attribute) {
+  // Create a buffer object
+  var buffer = gl.createBuffer();
+  if (!buffer) {
+    console.log('Failed to create the buffer object');
+    return false;
+  }
+  // Write date into the buffer object
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+  // Assign the buffer object to the attribute variable
+  var a_attribute = gl.getAttribLocation(gl.program, attribute);
+  if (a_attribute < 0) {
+    console.log('Failed to get the storage location of ' + attribute);
+    return false;
+  }
+  gl.vertexAttribPointer(a_attribute, num, type, false, 0, 0);
+  // Enable the assignment to a_attribute variable
+  gl.enableVertexAttribArray(a_attribute);
+
+  return true;
+}
+
 // Read a file
 function readOBJFile(fileName, gl, model, scale, reverse) {
   var request = new XMLHttpRequest();
@@ -269,7 +305,7 @@ function onReadComplete(gl, model, objDoc) {
   gl.bindBuffer(gl.ARRAY_BUFFER, model.normalBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.normals, gl.STATIC_DRAW);
   
-  gl.bindBuffer(gl.ARRAY_BUFFER, model.colorBuffer);
+  gl.bindBuffer(gl.ARRAY_BUFFER, model.texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, drawingInfo.colors, gl.STATIC_DRAW);
   
   // Write the indices to the buffer object
