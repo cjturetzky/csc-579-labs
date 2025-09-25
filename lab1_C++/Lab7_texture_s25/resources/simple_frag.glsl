@@ -5,7 +5,6 @@ out vec4 color;
 uniform vec3 MatAmb;
 uniform vec3 MatDif;
 uniform vec3 MatSpec;
-uniform float MatShine;
 
 //interpolated normal and light vector in camera space
 in vec3 fragNor;
@@ -15,11 +14,17 @@ in vec3 EPos;
 
 void main()
 {
+	//you will need to work with these for lighting
 	vec3 normal = normalize(fragNor);
-	vec3 light = normalize(lightDir);
-	float dC = max(0, dot(normal, light));
-	vec3 halfV = normalize(-1*EPos) + normalize(light);
-	float sC = pow(max(dot(normalize(halfV), normal), 0), MatShine);
-	color = vec4(MatAmb + dC*MatDif + sC*MatSpec, 1.0);
-	//color = vec4(MatAmb + dC*MatDif, 1.0);
+	vec3 light = normalize(lightDir - EPos);
+
+	float lambertian = max(dot(normal, light), 0.0);
+	float specular = 0.0;
+	if(lambertian > 0.0) {
+		vec3 R = reflect(-light, normal);
+		vec3 V = normalize(-EPos);
+		float specAngle = max(dor(R, V), 0.0);
+		specular = pow(specAngle, 80)
+	}
+	color = vec4(MatAmb + (lambertian * MatDif) + (specular * MatSpec), 1.0);
 }

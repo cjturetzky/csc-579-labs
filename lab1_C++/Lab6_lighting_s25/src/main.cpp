@@ -40,7 +40,7 @@ public:
 	//our geometry
 	shared_ptr<Shape> sphere;
 
-	shared_ptr<Shape> theBunny;
+	shared_ptr<Shape> theDragon;
 
 	//global data for ground plane - direct load constant defined CPU data to GPU (not obj)
 	GLuint GrndBuffObj, GrndNorBuffObj, GrndTexBuffObj, GIndxBuffObj;
@@ -182,7 +182,7 @@ public:
 		gMin.x = sphere->min.x;
 		gMin.y = sphere->min.y;
 
-		// Initialize bunny mesh.
+		// Initialize dragon mesh.
 		vector<tinyobj::shape_t> TOshapesB;
  		vector<tinyobj::material_t> objMaterialsB;
 		//load in the mesh and make the shape(s)
@@ -191,10 +191,10 @@ public:
 			cerr << errStr << endl;
 		} else {
 			
-			theBunny = make_shared<Shape>();
-			theBunny->createShape(TOshapesB[0]);
-			theBunny->measure();
-			theBunny->init();
+			theDragon = make_shared<Shape>();
+			theDragon->createShape(TOshapesB[0]);
+			theDragon->measure();
+			theDragon->init();
 		}
 
 		//code to load in the ground plane (CPU defined data passed to GPU)
@@ -374,7 +374,7 @@ public:
 		glUniformMatrix4fv(prog->getUniform("V"), 1, GL_FALSE, value_ptr(View->topMatrix()));
 		glUniform3f(prog->getUniform("lightPos"), 2.0, 2.0, 2.9);
 
-		// draw the array of bunnies
+		// draw the array of dragons
 		Model->pushMatrix();
 
 		float sp = 3.0;
@@ -386,7 +386,7 @@ public:
 				Model->scale(vec3(0.85, 0.85, 0.85));
 				SetMaterial(prog, (i+j)%3);
 				glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-				theBunny->draw(prog);
+				theDragon->draw(prog);
 			  Model->popMatrix();
 			}
 		  }
