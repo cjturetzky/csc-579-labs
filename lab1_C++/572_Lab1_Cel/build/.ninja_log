@@ -1,0 +1,5 @@
+# ninja log v7
+2	446	1758925586597224303	CMakeFiles/P1_Cel.dir/ext/glad/src/glad.c.o	53efe7e4fab9322d
+3	570	1758925586598146918	CMakeFiles/P1_Cel.dir/src/main.cpp.o	7f2c16da4fd66759
+3	1003	1758925586597552258	CMakeFiles/P1_Cel.dir/ext/tiny_obj_loader/tiny_obj_loader.cpp.o	2fbfcc26da51855
+1003	1214	1758925587597615390	P1_Cel	1800fdcf79d58d9b

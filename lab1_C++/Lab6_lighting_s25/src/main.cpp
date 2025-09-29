@@ -31,11 +31,14 @@ public:
 
 	WindowManager * windowManager = nullptr;
 
-	// Our shader program - use this one for Blinn-Phong
+	// Our shader program - use this one for cel-shading
 	std::shared_ptr<Program> prog;
 
 	//Our shader program for textures
 	std::shared_ptr<Program> texProg;
+
+	//Shader program for outline
+	std::shared_ptr<Program> outProg;
 
 	//our geometry
 	shared_ptr<Shape> sphere;
@@ -125,7 +128,7 @@ public:
 		// Initialize the GLSL program that we will use for local shading
 		prog = make_shared<Program>();
 		prog->setVerbose(true);
-		prog->setShaderNames(resourceDirectory + "/simple_vert.glsl", resourceDirectory + "/simple_frag.glsl");
+		prog->setShaderNames(resourceDirectory + "/cel_vert.glsl", resourceDirectory + "/cel_frag.glsl");
 		prog->init();
 		prog->addUniform("P");
 		prog->addUniform("V");
@@ -133,9 +136,20 @@ public:
 		prog->addUniform("MatAmb");
 		prog->addUniform("MatDif");
 		prog->addUniform("MatSpec");
+		prog->addUniform("MatShine");
 		prog->addUniform("lightPos");
 		prog->addAttribute("vertPos");
 		prog->addAttribute("vertNor");
+
+		outProg = make_shared<Program>();
+		outProg->setVerbose(true);
+		outProg->setShaderNames(resourceDirectory + "/outline_vert.glsl", resourceDirectory + "/outline_frag.glsl");
+		outProg->init();
+		outProg->addUniform("P");
+		outProg->addUniform("V");
+		outProg->addUniform("M");
+		outProg->addAttribute("vertPos");
+		outProg->addAttribute("vertNor");
 
 		// Initialize the GLSL program that we will use for texture mapping
 		texProg = make_shared<Program>();
@@ -291,19 +305,19 @@ public:
     			glUniform3f(curS->getUniform("MatAmb"), 0.096, 0.046, 0.095);
     			glUniform3f(curS->getUniform("MatDif"), 0.96, 0.46, 0.95);
     			glUniform3f(curS->getUniform("MatSpec"), 0.45, 0.23, 0.45);
-    			//glUniform1f(curS->getUniform("MatShine"), 120.0);
+    			glUniform1f(curS->getUniform("MatShine"), 120.0);
     		break;
     		case 1: // 
     			glUniform3f(curS->getUniform("MatAmb"), 0.063, 0.038, 0.1);
     			glUniform3f(curS->getUniform("MatDif"), 0.63, 0.38, 1.0);
     			glUniform3f(curS->getUniform("MatSpec"), 0.3, 0.2, 0.5);
-    			//glUniform1f(curS->getUniform("MatShine"), 4.0);
+    			glUniform1f(curS->getUniform("MatShine"), 4.0);
     		break;
     		case 2: //
     			glUniform3f(curS->getUniform("MatAmb"), 0.004, 0.05, 0.09);
     			glUniform3f(curS->getUniform("MatDif"), 0.04, 0.5, 0.9);
     			glUniform3f(curS->getUniform("MatSpec"), 0.02, 0.25, 0.45);
-    			//glUniform1f(curS->getUniform("MatShine"), 27.9);
+    			glUniform1f(curS->getUniform("MatShine"), 27.9);
     		break;
   		}
 	}
@@ -323,7 +337,7 @@ public:
    	}
 
    	/* code to draw waving hierarchical model */
-   	void drawHierModel(shared_ptr<MatrixStack> Model) {
+   	void drawHierModel(shared_ptr<MatrixStack> Model, bool outline) {
    		// draw hierarchical mesh - replace with your code if desired
 		Model->pushMatrix();
 			Model->loadIdentity();
@@ -332,8 +346,13 @@ public:
 			//draw the torso with these transforms
 			Model->pushMatrix();
 			  Model->scale(vec3(1.15, 1.35, 1.0));
-			  setModel(prog, Model);
-			  sphere->draw(prog);
+			  if(outline){
+				setModel(outProg, Model);
+			  }
+			  else{
+				setModel(prog, Model);
+			  }
+			  // sphere->draw(prog);
 			Model->popMatrix();
 			
 		Model->popMatrix();
@@ -368,6 +387,36 @@ public:
 		//global rotate (the whole scene )
 		View->rotate(gRot, vec3(0, 1, 0));
 
+		// Use outline shader
+		outProg->bind();
+		glUniformMatrix4fv(outProg->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
+		glUniformMatrix4fv(outProg->getUniform("V"), 1, GL_FALSE, value_ptr(View->topMatrix()));
+		// glUniform3f(outProg->getUniform("lightPos"), 2.0, 2.0, 2.9);
+
+		// draw the array of dragons
+		Model->pushMatrix();
+
+		float sp = 3.0;
+		float off = -3.5;
+		  for (int i =0; i < 3; i++) {
+		  	for (int j=0; j < 3; j++) {
+			  Model->pushMatrix();
+				Model->translate(vec3(off+sp*i, -1, off+sp*j));
+				Model->scale(vec3(0.85, 0.85, 0.85));
+				// SetMaterial(outProg, (i+j)%3);
+				glUniformMatrix4fv(outProg->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+				theDragon->draw(outProg);
+			  Model->popMatrix();
+			}
+		  }
+		Model->popMatrix();
+
+		//draw the waving HM
+		// SetMaterial(outProg, 1);
+		drawHierModel(Model, true);
+
+		outProg->unbind();
+
 		// Draw the scene
 		prog->bind();
 		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
@@ -377,8 +426,6 @@ public:
 		// draw the array of dragons
 		Model->pushMatrix();
 
-		float sp = 3.0;
-		float off = -3.5;
 		  for (int i =0; i < 3; i++) {
 		  	for (int j=0; j < 3; j++) {
 			  Model->pushMatrix();
@@ -394,7 +441,7 @@ public:
 
 		//draw the waving HM
 		SetMaterial(prog, 1);
-		drawHierModel(Model);
+		drawHierModel(Model, false);
 
 		prog->unbind();
 

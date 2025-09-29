@@ -1,0 +1,5 @@
+# ninja log v7
+0	444	1758926250127300096	CMakeFiles/P1_Geometry.dir/ext/glad/src/glad.c.o	a686aa3b2d82a407
+1	596	1758926250127685504	CMakeFiles/P1_Geometry.dir/src/main.cpp.o	9d584ee04cc52c29
+1	1033	1758926250127545299	CMakeFiles/P1_Geometry.dir/ext/tiny_obj_loader/tiny_obj_loader.cpp.o	5334034e2ea4770d
+1033	1256	1758926251159677171	P1_Geometry	85ff21f2a059d32a

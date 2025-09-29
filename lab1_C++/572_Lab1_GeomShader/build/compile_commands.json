@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/build",
+  "command": "/opt/homebrew/bin/aarch64-apple-darwin25-gcc-15 -I/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext -I/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext/glad/include -I/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader -isystem /opt/homebrew/include -g -arch arm64 -o CMakeFiles/P1_Geometry.dir/ext/glad/src/glad.c.o -c /Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext/glad/src/glad.c",
+  "file": "/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext/glad/src/glad.c",
+  "output": "/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/build/CMakeFiles/P1_Geometry.dir/ext/glad/src/glad.c.o"
+},
+{
+  "directory": "/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/build",
+  "command": "/opt/homebrew/bin/aarch64-apple-darwin25-g++-15 -I/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext -I/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext/glad/include -I/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader -isystem /opt/homebrew/include -g -std=gnu++14 -arch arm64 -o CMakeFiles/P1_Geometry.dir/ext/tiny_obj_loader/tiny_obj_loader.cpp.o -c /Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext/tiny_obj_loader/tiny_obj_loader.cpp",
+  "file": "/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext/tiny_obj_loader/tiny_obj_loader.cpp",
+  "output": "/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/build/CMakeFiles/P1_Geometry.dir/ext/tiny_obj_loader/tiny_obj_loader.cpp.o"
+},
+{
+  "directory": "/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/build",
+  "command": "/opt/homebrew/bin/aarch64-apple-darwin25-g++-15 -I/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext -I/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/ext/glad/include -I/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader -isystem /opt/homebrew/include -g -std=gnu++14 -arch arm64 -o CMakeFiles/P1_Geometry.dir/src/main.cpp.o -c /Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/src/main.cpp",
+  "file": "/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/src/main.cpp",
+  "output": "/Users/cjturetzky/Desktop/Cal_Poly/CSC-579/csc-579-labs/lab1_C++/572_Lab1_GeomShader/build/CMakeFiles/P1_Geometry.dir/src/main.cpp.o"
+}
+]
