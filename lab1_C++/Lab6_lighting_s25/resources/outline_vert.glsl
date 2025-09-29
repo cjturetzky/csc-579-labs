@@ -6,6 +6,6 @@ uniform mat4 M, V, P;
 // uniform float outlineScale; // small scale around origin, e.g. 0.01–0.03
 
 void main() {
-    vec3 pos = vertPos * (1.0 + 0.05);
+    vec3 pos = vertPos * (1.01);
     gl_Position = P * V * (M * vec4(pos, 1.0));
 }

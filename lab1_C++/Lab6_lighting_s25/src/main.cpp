@@ -389,6 +389,8 @@ public:
 
 		// Use outline shader
 		outProg->bind();
+		glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
 		glUniformMatrix4fv(outProg->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
 		glUniformMatrix4fv(outProg->getUniform("V"), 1, GL_FALSE, value_ptr(View->topMatrix()));
 		// glUniform3f(outProg->getUniform("lightPos"), 2.0, 2.0, 2.9);
@@ -414,7 +416,7 @@ public:
 		//draw the waving HM
 		// SetMaterial(outProg, 1);
 		drawHierModel(Model, true);
-
+		glCullFace(GL_BACK);
 		outProg->unbind();
 
 		// Draw the scene
