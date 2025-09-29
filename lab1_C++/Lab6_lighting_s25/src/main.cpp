@@ -24,6 +24,43 @@
 using namespace std;
 using namespace glm;
 
+// Geometry-shader pipeline to draw per-vertex normal lines
+static const char* normalsVS = R"(#version 330 core
+layout(location=0) in vec3 vertPos;
+layout(location=1) in vec3 vertNor;
+out VS_OUT { vec3 posOS; vec3 norOS; } vs_out;
+void main(){
+    vs_out.posOS = vertPos;
+    vs_out.norOS = vertNor;
+    gl_Position = vec4(vertPos,1.0);
+}
+)";
+
+static const char* normalsGS = R"(#version 330 core
+layout(triangles) in;
+layout(line_strip, max_vertices=6) out;
+in VS_OUT { vec3 posOS; vec3 norOS; } gs_in[];
+uniform mat4 M, V, P;
+uniform float normalLength;
+void emit_line(vec3 a, vec3 b){
+    gl_Position = P*V*M*vec4(a,1.0); EmitVertex();
+    gl_Position = P*V*M*vec4(b,1.0); EmitVertex();
+    EndPrimitive();
+}
+void main(){
+    for(int i=0;i<3;++i){
+        vec3 p = gs_in[i].posOS;
+        vec3 n = normalize(gs_in[i].norOS);
+        emit_line(p, p + n*normalLength);
+    }
+}
+)";
+
+static const char* normalsFS = R"(#version 330 core
+out vec4 FragColor;
+void main(){ FragColor = vec4(0.1, 0.95, 0.2, 1.0); }
+)";
+
 class Application : public EventCallbacks
 {
 
@@ -170,6 +207,14 @@ public:
   		texture0->init();
   		texture0->setUnit(0);
   		texture0->setWrapModes(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+
+		GLuint pNormals = linkProgram({ compile(GL_VERTEX_SHADER, normalsVS),
+                    compile(GL_GEOMETRY_SHADER, normalsGS),
+                    compile(GL_FRAGMENT_SHADER, normalsFS) });
+		GLint uM_norm = glGetUniformLocation(pNormals, "M");
+    	GLint uV_norm = glGetUniformLocation(pNormals, "V");
+    	GLint uP_norm = glGetUniformLocation(pNormals, "P");
+    	GLint uLen    = glGetUniformLocation(pNormals, "normalLength");
 	}
 
 	void initGeom(const std::string& resourceDirectory)
@@ -510,4 +555,35 @@ int main(int argc, char *argv[])
 	// Quit program.
 	windowManager->shutdown();
 	return 0;
+}
+
+static GLuint compile(GLenum type, const char* src) {
+    GLuint s = glCreateShader(type);
+    glShaderSource(s, 1, &src, nullptr);
+    glCompileShader(s);
+    GLint ok = 0; glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
+    if (!ok) {
+        GLint len = 0; glGetShaderiv(s, GL_INFO_LOG_LENGTH, &len);
+        std::vector<char> buf(len > 1 ? len : 1);
+        GLsizei written = 0; glGetShaderInfoLog(s, (GLsizei)buf.size(), &written, buf.data());
+        std::cerr << "[Shader] " << (written ? buf.data() : "compile failed (no log)") << "\n";
+        std::exit(EXIT_FAILURE);
+    }
+    return s;
+}
+
+static GLuint linkProgram(std::initializer_list<GLuint> shaders) {
+    GLuint p = glCreateProgram();
+    for (auto s : shaders) glAttachShader(p, s);
+    glLinkProgram(p);
+    GLint ok = 0; glGetProgramiv(p, GL_LINK_STATUS, &ok);
+    if (!ok) {
+        GLint len = 0; glGetProgramiv(p, GL_INFO_LOG_LENGTH, &len);
+        std::vector<char> buf(len > 1 ? len : 1);
+        GLsizei written = 0; glGetProgramInfoLog(p, (GLsizei)buf.size(), &written, buf.data());
+        std::cerr << "[Link] " << (written ? buf.data() : "link failed (no log)") << "\n";
+        std::exit(EXIT_FAILURE);
+    }
+    for (auto s : shaders) glDeleteShader(s);
+    return p;
 }
