@@ -24,43 +24,6 @@
 using namespace std;
 using namespace glm;
 
-// Geometry-shader pipeline to draw per-vertex normal lines
-static const char* normalsVS = R"(#version 330 core
-layout(location=0) in vec3 vertPos;
-layout(location=1) in vec3 vertNor;
-out VS_OUT { vec3 posOS; vec3 norOS; } vs_out;
-void main(){
-    vs_out.posOS = vertPos;
-    vs_out.norOS = vertNor;
-    gl_Position = vec4(vertPos,1.0);
-}
-)";
-
-static const char* normalsGS = R"(#version 330 core
-layout(triangles) in;
-layout(line_strip, max_vertices=6) out;
-in VS_OUT { vec3 posOS; vec3 norOS; } gs_in[];
-uniform mat4 M, V, P;
-uniform float normalLength;
-void emit_line(vec3 a, vec3 b){
-    gl_Position = P*V*M*vec4(a,1.0); EmitVertex();
-    gl_Position = P*V*M*vec4(b,1.0); EmitVertex();
-    EndPrimitive();
-}
-void main(){
-    for(int i=0;i<3;++i){
-        vec3 p = gs_in[i].posOS;
-        vec3 n = normalize(gs_in[i].norOS);
-        emit_line(p, p + n*normalLength);
-    }
-}
-)";
-
-static const char* normalsFS = R"(#version 330 core
-out vec4 FragColor;
-void main(){ FragColor = vec4(0.1, 0.95, 0.2, 1.0); }
-)";
-
 class Application : public EventCallbacks
 {
 
@@ -76,6 +39,9 @@ public:
 
 	//Shader program for outline
 	std::shared_ptr<Program> outProg;
+
+	//Shader program for geometric shader
+	std::shared_ptr<Program> geoProg;
 
 	//our geometry
 	shared_ptr<Shape> sphere;
@@ -165,7 +131,7 @@ public:
 		// Initialize the GLSL program that we will use for local shading
 		prog = make_shared<Program>();
 		prog->setVerbose(true);
-		prog->setShaderNames(resourceDirectory + "/cel_vert.glsl", resourceDirectory + "/cel_frag.glsl");
+		prog->setShaderNames(resourceDirectory + "/cel_vert.glsl", resourceDirectory + "/cel_frag.glsl", "");
 		prog->init();
 		prog->addUniform("P");
 		prog->addUniform("V");
@@ -180,7 +146,7 @@ public:
 
 		outProg = make_shared<Program>();
 		outProg->setVerbose(true);
-		outProg->setShaderNames(resourceDirectory + "/outline_vert.glsl", resourceDirectory + "/outline_frag.glsl");
+		outProg->setShaderNames(resourceDirectory + "/outline_vert.glsl", resourceDirectory + "/outline_frag.glsl", "");
 		outProg->init();
 		outProg->addUniform("P");
 		outProg->addUniform("V");
@@ -191,7 +157,7 @@ public:
 		// Initialize the GLSL program that we will use for texture mapping
 		texProg = make_shared<Program>();
 		texProg->setVerbose(true);
-		texProg->setShaderNames(resourceDirectory + "/tex_vert.glsl", resourceDirectory + "/tex_frag0.glsl");
+		texProg->setShaderNames(resourceDirectory + "/tex_vert.glsl", resourceDirectory + "/tex_frag0.glsl", "");
 		texProg->init();
 		texProg->addUniform("P");
 		texProg->addUniform("V");
@@ -201,20 +167,24 @@ public:
 		texProg->addAttribute("vertNor");
 		texProg->addAttribute("vertTex");
 
+		// Initialize geometric shader program
+		geoProg = make_shared<Program>();
+		geoProg->setVerbose(true);
+		geoProg->setShaderNames(resourceDirectory + "/geom_vert.glsl", resourceDirectory + "/geom_frag.glsl", resourceDirectory + "/geom_sh.glsl");
+		geoProg->init();
+		geoProg->addUniform("P");
+		geoProg->addUniform("V");
+		geoProg->addUniform("M");
+		geoProg->addAttribute("vertPos");
+		geoProg->addAttribute("vertNor");
+		
+
 		//read in a load the texture
 		texture0 = make_shared<Texture>();
   		texture0->setFilename(resourceDirectory + "/texture.jpg");
   		texture0->init();
   		texture0->setUnit(0);
   		texture0->setWrapModes(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-
-		GLuint pNormals = linkProgram({ compile(GL_VERTEX_SHADER, normalsVS),
-                    compile(GL_GEOMETRY_SHADER, normalsGS),
-                    compile(GL_FRAGMENT_SHADER, normalsFS) });
-		GLint uM_norm = glGetUniformLocation(pNormals, "M");
-    	GLint uV_norm = glGetUniformLocation(pNormals, "V");
-    	GLint uP_norm = glGetUniformLocation(pNormals, "P");
-    	GLint uLen    = glGetUniformLocation(pNormals, "normalLength");
 	}
 
 	void initGeom(const std::string& resourceDirectory)
@@ -382,7 +352,7 @@ public:
    	}
 
    	/* code to draw waving hierarchical model */
-   	void drawHierModel(shared_ptr<MatrixStack> Model, bool outline) {
+   	void drawHierModel(shared_ptr<MatrixStack> Model, bool outline, bool geo) {
    		// draw hierarchical mesh - replace with your code if desired
 		Model->pushMatrix();
 			Model->loadIdentity();
@@ -393,6 +363,9 @@ public:
 			  Model->scale(vec3(1.15, 1.35, 1.0));
 			  if(outline){
 				setModel(outProg, Model);
+			  }
+			  else if(geo){
+				setModel(geoProg, Model);
 			  }
 			  else{
 				setModel(prog, Model);
@@ -460,7 +433,7 @@ public:
 
 		//draw the waving HM
 		// SetMaterial(outProg, 1);
-		drawHierModel(Model, true);
+		drawHierModel(Model, true, false);
 		glCullFace(GL_BACK);
 		outProg->unbind();
 
@@ -468,7 +441,7 @@ public:
 		prog->bind();
 		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
 		glUniformMatrix4fv(prog->getUniform("V"), 1, GL_FALSE, value_ptr(View->topMatrix()));
-		glUniform3f(prog->getUniform("lightPos"), 2.0, 2.0, 2.9);
+		// glUniform3f(prog->getUniform("lightPos"), 2.0, 2.0, 2.9);
 
 		// draw the array of dragons
 		Model->pushMatrix();
@@ -488,7 +461,7 @@ public:
 
 		//draw the waving HM
 		SetMaterial(prog, 1);
-		drawHierModel(Model, false);
+		drawHierModel(Model, false, false);
 
 		prog->unbind();
 
@@ -501,6 +474,35 @@ public:
 		drawGround(texProg);
 
 		texProg->unbind();
+
+		// Switch to the geometric shader to draw the surface normals
+		geoProg->bind();
+		
+		glUniformMatrix4fv(geoProg->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
+		glUniformMatrix4fv(geoProg->getUniform("V"), 1, GL_FALSE, value_ptr(View->topMatrix()));
+		// glUniform3f(outProg->getUniform("lightPos"), 2.0, 2.0, 2.9);
+
+		// draw the array of dragons
+		Model->pushMatrix();
+
+		  for (int i =0; i < 3; i++) {
+		  	for (int j=0; j < 3; j++) {
+			  Model->pushMatrix();
+				Model->translate(vec3(off+sp*i, -1, off+sp*j));
+				Model->scale(vec3(0.85, 0.85, 0.85));
+				// SetMaterial(outProg, (i+j)%3);
+				glUniformMatrix4fv(geoProg->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+				theDragon->draw(geoProg);
+			  Model->popMatrix();
+			}
+		  }
+		Model->popMatrix();
+
+		//draw the waving HM
+		// SetMaterial(outProg, 1);
+		drawHierModel(Model, false, true);
+		geoProg->unbind();
+
 		
 		//animation update example
 		sTheta = sin(glfwGetTime());

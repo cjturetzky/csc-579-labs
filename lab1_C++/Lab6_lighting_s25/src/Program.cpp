@@ -28,10 +28,11 @@ std::string readFileAsString(const std::string &fileName)
 	return result;
 }
 
-void Program::setShaderNames(const std::string &v, const std::string &f)
+void Program::setShaderNames(const std::string &v, const std::string &f, const std::string &g = "")
 {
 	vShaderName = v;
 	fShaderName = f;
+	gShaderName = g;
 }
 
 bool Program::init()
@@ -41,6 +42,19 @@ bool Program::init()
 	// Create shader handles
 	GLuint VS = glCreateShader(GL_VERTEX_SHADER);
 	GLuint FS = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint GS = 0;
+
+	// If a geometric shader is passed, create the handles and read the sources
+	bool geoshader = false;
+	if(gShaderName != ""){
+		geoshader = true;
+		GS = glCreateShader(GL_GEOMETRY_SHADER);
+		std::string gShaderString = readFileAsString(gShaderName);
+		const char *gshader = gShaderString.c_str();
+		CHECKED_GL_CALL(glShaderSource(GS, 1, &gshader, NULL));
+	}
+	
+	
 
 	// Read shader sources
 	std::string vShaderString = readFileAsString(vShaderName);
@@ -63,6 +77,21 @@ bool Program::init()
 		return false;
 	}
 
+	// If a geometric shader is present, compile the geometric shader
+	if(geoshader){
+		CHECKED_GL_CALL(glCompileShader(GS));
+		CHECKED_GL_CALL(glGetShaderiv(GS, GL_COMPILE_STATUS, &rc));
+		if(!rc)
+		{
+			if (isVerbose())
+			{
+				GLSL::printShaderInfoLog(GS);
+				std::cout << "Error compiling geometry shader " << gShaderName << std::endl;
+			}
+			return false;
+		}
+	}
+
 	// Compile fragment shader
 	CHECKED_GL_CALL(glCompileShader(FS));
 	CHECKED_GL_CALL(glGetShaderiv(FS, GL_COMPILE_STATUS, &rc));
@@ -79,6 +108,9 @@ bool Program::init()
 	// Create the program and link
 	pid = glCreateProgram();
 	CHECKED_GL_CALL(glAttachShader(pid, VS));
+	if(geoshader){
+		CHECKED_GL_CALL(glAttachShader(pid, GS));
+	}
 	CHECKED_GL_CALL(glAttachShader(pid, FS));
 	CHECKED_GL_CALL(glLinkProgram(pid));
 	CHECKED_GL_CALL(glGetProgramiv(pid, GL_LINK_STATUS, &rc));
@@ -91,7 +123,6 @@ bool Program::init()
 		}
 		return false;
 	}
-
 	return true;
 }
 
