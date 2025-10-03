@@ -13,7 +13,7 @@ namespace rt { void render_scene_ppm(const Scene&, const Camera&, int, const std
 
 int main(int argc, char** argv){
     using namespace rt;
-    const int W=800, H=600, SPP=8;
+    const int W=800, H=600, SPP=4;
     Camera cam({0,1,4}, {0,1,0}, {0,1,0}, 45.0, W, H);
 
     Scene sc;
@@ -35,9 +35,13 @@ int main(int argc, char** argv){
 
     // Add spheres
     int matRed   = sc.addMaterial({{0.8,0.2,0.2}});
+    int matGreen = sc.addMaterial({{0.2,0.8,0.2}});
+    int matBlue = sc.addMaterial({{0.2,0.2,0.8}});
     //add a green and blue material
     sc.add(std::make_unique<Sphere>(Vec3{-1.2,1.0,0.0}, 1.0, matRed));
     //add two more spheres
+    sc.add(std::make_unique<Sphere>(Vec3{1.2,1.0,0.0}, 1.0, matGreen));
+    sc.add(std::make_unique<Sphere>(Vec3{0.0,1.0,2.0}, 1.0, matBlue));
 
     render_scene_ppm(sc, cam, SPP, "out.ppm");
     return 0;
