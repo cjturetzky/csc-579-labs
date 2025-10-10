@@ -9,6 +9,7 @@
 
 namespace rt {
 
+// Random Number generator; Pulls a random number from a uniform real distribution based on the current system time
 struct RNG {
     std::mt19937_64 gen;
     std::uniform_real_distribution<double> dist;
@@ -33,21 +34,22 @@ public:
         for (int j = cam.H - 1; j >= 0; --j) {
             std::cerr << "Row " << (cam.H - 1 - j) << "/" << cam.H << "\r";
 
-            for (int i = 0; i < cam.W; ++i) {
+            for (int i = 0; i < cam.W; ++i) { // For each pixel in camera; 0-H, 0-W
                 Vec3 col(0);
 
-                for (int s = 0; s < spp; ++s) {
+                for (int s = 0; s < spp; ++s) { // Sample u & v depending on number of samples per pixel
                     double u = ((i + rng.uniform()) / double(cam.W)) * 2.0 - 1.0;
                     double v = ((j + rng.uniform()) / double(cam.H)) * 2.0 - 1.0;
                     Ray pr = cam.primary(u, v);
                     col += trace(pr);
                 }
 
-                col = col / double(spp);
+                col = col / double(spp); // Normalize colors based on number of samples; multiple samples add color values
                 col = { col.x / (1.0 + col.x), 
                         col.y / (1.0 + col.y), 
                         col.z / (1.0 + col.z) };
 
+                // Ensure RGB values fall between 0-256
                 unsigned char r = (unsigned char)(std::clamp(toSRGB(col.x), 0.0, 1.0) * 255.99);
                 unsigned char g = (unsigned char)(std::clamp(toSRGB(col.y), 0.0, 1.0) * 255.99);
                 unsigned char b = (unsigned char)(std::clamp(toSRGB(col.z), 0.0, 1.0) * 255.99);
@@ -67,11 +69,12 @@ private:
     double gamma;
     double eps;
 
+    // Detects if a pixel p is in shadow based on an intersection between it and the light source
     bool inShadow(const Vec3& p, const Vec3& n, const PointLight& L) const {
-        Vec3 toL = L.pos - p;
-        double distL = length(toL);
-        Vec3 dir = toL / distL;
-        Ray shadowRay(p + n * eps, dir);
+        Vec3 toL = L.pos - p; // Vector pointing to light source
+        double distL = length(toL); // Distance to light source
+        Vec3 dir = toL / distL; // Directional ray from pixel to light
+        Ray shadowRay(p + n * eps, dir); 
         Hit h;
 
         if (scene.intersect(shadowRay, 0.0, distL - 1e-5, h))
@@ -80,8 +83,19 @@ private:
         return false;
     }
 
-    Vec3 shade(const Hit& h, const Ray&) const {
-        const Material& m = scene.materials[h.matId];
+    Vec3 reflect(const Hit& h, const Ray& r) const {
+        Vec3 in_vec = h.p - r.o; // Vector pointing to hit from camera
+        Vec3 ref_vec = in_vec - (2 * dot(in_vec, normalize(h.n)) * normalize(h.n)); // Define reflective vector
+        Ray reflection(h.p, ref_vec);
+        return trace(reflection);
+    }
+
+    Vec3 shade(const Hit& h, const Ray& r) const {
+        const Material& m = scene.materials[h.matId]; // Pull the material from the hit object
+
+        if(m.reflective){ // If the material is reflective, run the reflection check
+            return reflect(h, r); // Returns the shade of the hit object
+        }
         Vec3 c(0);
 
         for (const auto& L : scene.lights) {
